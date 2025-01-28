@@ -53,7 +53,15 @@ run)
         fi
     done
 
-    # STEP 4: Clone the mStream repository if not already present
+    # STEP 4: Configure UFW Firewall
+    echo "[+] Configuring UFW firewall..."
+    ufw default deny incoming
+    ufw default allow outgoing
+    ufw allow 22/tcp  # SSH
+    ufw allow 3030/tcp  # mStream
+    ufw enable -y
+
+    # STEP 5: Clone the mStream repository if not already present
     BASE_DIR="/home/rpi/mStream"
     if [ -d "$BASE_DIR" ]; then
         echo "[+] mStream directory already exists. Skipping cloning."
@@ -65,12 +73,12 @@ run)
     # Go to the base directory
     cd "$BASE_DIR"
 
-    # STEP 5: Fix file permissions
+    # STEP 6: Fix file permissions
     echo "[+] Fixing mStream file permissions..."
     chown -R nout:nout "$BASE_DIR"
     chmod -R 775 "$BASE_DIR"
 
-    # STEP 6: Create a music directory
+    # STEP 7: Create a music directory
     MUSIC_DIR="/home/rpi/music"
     mkdir -p "$MUSIC_DIR"
     echo "[+] Music directory created at $MUSIC_DIR"
@@ -83,7 +91,7 @@ run)
         echo "[+] Sample music file already exists. Skipping download."
     fi
 
-    # STEP 7: Create mStream configuration
+    # STEP 8: Create mStream configuration
     CONFIG_DIR="$BASE_DIR/save/conf"
     mkdir -p "$CONFIG_DIR"
 
@@ -102,11 +110,11 @@ run)
 }
 EOL
 
-    # STEP 8: Install mStream dependencies
+    # STEP 9: Install mStream dependencies
     echo "[+] Installing mStream dependencies..."
     npm install
 
-    # STEP 9: Create a systemd service for mStream
+    # STEP 10: Create a systemd service for mStream
     echo "[+] Creating systemd service for mStream..."
     SERVICE_FILE="/etc/systemd/system/mstream.service"
     cat <<EOL > "$SERVICE_FILE"
