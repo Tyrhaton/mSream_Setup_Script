@@ -4,7 +4,6 @@
 set -e
 
 param=$1
-param2=$2
 
 # Switch-case structure
 case $param in
@@ -20,78 +19,15 @@ run)
 
     # STEP 1: Check and Install Node.js (if missing or outdated)
     echo "[+] Checking Node.js installation..."
-    INSTALLED_NODE_VERSION=$(node -v 2>/dev/null || echo "not_installed")
-    REQUIRED_NODE_VERSION="v22.13.1"
+    NODE_VERSION=$(node -v 2>/dev/null || echo "not_installed")
+    REQUIRED_NODE_VERSION="v20"
 
-    if [[ $INSTALLED_NODE_VERSION != $REQUIRED_NODE_VERSION* ]]; then
-        echo "[-] Node.js is not installed or outdated. Installing Node.js $REQUIRED_NODE_VERSION..."
-
-        if  [ "$param2" = "-source" ]; then
-            installFromSource=y
-
-        else
-            read -p "[=] Install from source? (y/n)" installFromSource
-
-        fi
-
-        case $installFromSource in
-        y)
-            # Install Node.js from source
-            echo "[+] Installing Node.js from source..."
-            # Install Dependencies
-            echo "[+] Installing required packages"
-            sudo apt update && sudo apt install -y build-essential python3 g++ make curl
-
-            # Download Node.js sourcecode
-            echo "[+] Downloading Node.js sourcecode (version $REQUIRED_NODE_VERSION)"
-            BUILD_DIR="/tmp/nodejs-build"
-            mkdir -p "$BUILD_DIR"
-            cd "$BUILD_DIR"
-            curl -O "https://nodejs.org/dist/$REQUIRED_NODE_VERSION/node-$REQUIRED_NODE_VERSION.tar.gz"
-
-            # Extract sourcecode
-            echo "[+] Extracting Node.js sourcecode"
-            tar -xzf "node-$REQUIRED_NODE_VERSION.tar.gz"
-            cd "node-$REQUIRED_NODE_VERSION"
-
-            # Configure the build
-            echo "[+] configurating Node.js"
-            ./configure
-
-            # Build using all available cores
-            echo "[+] Building Node.js on all cores"
-            make -j$(nproc)
-
-            # Install Node.js
-            echo "[+] Installing Node.js version $REQUIRED_NODE_VERSION"
-            sudo make install
-
-            # Cleanup
-            echo "[+] Cleaning up build files"
-            cd ~
-            sudo rm -rf "$BUILD_DIR"
-
-            # Verify installation
-            echo "[+] Verifying Node.js and npm versions"
-            ;;
-        n)
-            # Install Node.js from the official repository
-            echo "[+] Installing Node.js from the official repository"
-            curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-            apt install -y nodejs
-            ;;
-        *)
-            echo "[-] Invalid input. Exiting..."
-            exit 1
-            ;;
-        esac
-        node -v
-        npm -v
-
-        echo "[+] Node.js $REQUIRED_NODE_VERSION has been successfully installed"
-
+    if [[ $NODE_VERSION != $REQUIRED_NODE_VERSION* ]]; then
+        echo "[-] Node.js is not installed or outdated. Installing Node.js 20 LTS..."
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+        apt install -y nodejs
     else
-        echo "[+] Node.js is already installed: $INSTALLED_NODE_VERSION"
+        echo "[+] Node.js is already installed: $NODE_VERSION"
     fi
 
     # Verify Node.js and npm versions
@@ -102,7 +38,7 @@ run)
     echo "[+] Fixing npm permissions..."
     mkdir -p ~/.npm-global
     npm config set prefix '~/.npm-global'
-    echo 'export PATH=$HOME/.npm-global/bin:$PATH' >>~/.bashrc
+    echo 'export PATH=$HOME/.npm-global/bin:$PATH' >> ~/.bashrc
     source ~/.bashrc
 
     # STEP 3: Check and Install Required Packages
@@ -181,7 +117,7 @@ EOL
     # STEP 10: Create a systemd service for mStream
     echo "[+] Creating systemd service for mStream..."
     SERVICE_FILE="/etc/systemd/system/mstream.service"
-    cat <<EOL >"$SERVICE_FILE"
+    cat <<EOL > "$SERVICE_FILE"
 [Unit]
 Description=mStream Music Server
 After=network.target
