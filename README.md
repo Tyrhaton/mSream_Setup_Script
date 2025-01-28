@@ -8,11 +8,11 @@ A script to automatically setup mStream onto a Linux based Operating system like
  - [mStream](https://github.com/IrosTheBeggar/mStream) mStream is a personal music streaming server. You can use mStream to stream your music from your home computer to any device, anywhere.
 
 # Setup Instructions
-1. run `script.sh`.
+1. run `./script.sh run` (You can add -source to build from source) 
 
 
 # Usage
-- Start the server using ./script.sh --start
+- Start the server using ./script.sh start
 - You can upload any music (mp3) files you want into /home/rpi/music/
 
 # Access
