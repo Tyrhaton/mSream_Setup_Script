@@ -31,6 +31,8 @@ run)
 
         if [ "$param2" = "-source" ]; then
             installFromSource=y
+        elif [ "$param2" = "-precompiled" ]; then
+            installFromSource=n
         else
             read -p "[=] Install from source? (y/n) " installFromSource
         fi
@@ -195,8 +197,8 @@ EOL
     LOCAL_IP=$(hostname -I | awk '{print $1}')
 
     echo "[+] mStream server setup completed!"
-    echo "Access the server locally at: http://$LOCAL_IP:3030"
-    echo "If you want others to access it, use port forwarding on your router for port 3030."
+    echo "[+] Access the server locally at: http://$LOCAL_IP:3030"
+    echo "[+} If you want others to access it, use port forwarding on your router for port 3030."
 
     ;;
 start)
