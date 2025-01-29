@@ -6,17 +6,20 @@ set -e
 param=$1
 param2=$2
 
-# Switch-case structure
+# Get the current logged-in user and home directory
+CURRENT_USER=$(logname)
+USER_HOME=$(eval echo ~$CURRENT_USER)
+
+# Ensure script is running as root
+if [ "$EUID" -ne 0 ]; then
+    echo "[-] Run this script with sudo or as root"
+    exit 1
+fi
+
 case $param in
 run)
 
-    echo "[+] Starting mStream music server setup..."
-
-    # Ensure the script is run as root
-    if [ "$EUID" -ne 0 ]; then
-        echo "[-] Run this script with sudo or as root"
-        exit 1
-    fi
+    echo "[+] Starting mStream music server setup for user: $CURRENT_USER..."
 
     # STEP 1: Check and Install Node.js (if missing or outdated)
     echo "[+] Checking Node.js installation..."
@@ -26,56 +29,43 @@ run)
     if [[ $INSTALLED_NODE_VERSION != $REQUIRED_NODE_VERSION* ]]; then
         echo "[-] Node.js is not installed or outdated. Installing Node.js $REQUIRED_NODE_VERSION..."
 
-        if  [ "$param2" = "-source" ]; then
+        if [ "$param2" = "-source" ]; then
             installFromSource=y
-
         else
-            read -p "[=] Install from source? (y/n)" installFromSource
-
+            read -p "[=] Install from source? (y/n) " installFromSource
         fi
 
         case $installFromSource in
         y)
-            # Install Node.js from source
             echo "[+] Installing Node.js from source..."
-            # Install Dependencies
-            echo "[+] Installing required packages"
             sudo apt update && sudo apt install -y build-essential python3 g++ make curl
-
-            # Download Node.js sourcecode
-            echo "[+] Downloading Node.js sourcecode (version $REQUIRED_NODE_VERSION)"
             BUILD_DIR="/tmp/nodejs-build"
             mkdir -p "$BUILD_DIR"
             cd "$BUILD_DIR"
+
+            echo "[+] Downloading Node.js sourcecode (version $REQUIRED_NODE_VERSION)"
             curl -O "https://nodejs.org/dist/$REQUIRED_NODE_VERSION/node-$REQUIRED_NODE_VERSION.tar.gz"
 
-            # Extract sourcecode
             echo "[+] Extracting Node.js sourcecode"
             tar -xzf "node-$REQUIRED_NODE_VERSION.tar.gz"
             cd "node-$REQUIRED_NODE_VERSION"
 
-            # Configure the build
-            echo "[+] configurating Node.js"
+            echo "[+] Configuring Node.js"
             ./configure
 
-            # Build using all available cores
             echo "[+] Building Node.js on all cores"
             make -j$(nproc)
 
-            # Install Node.js
             echo "[+] Installing Node.js version $REQUIRED_NODE_VERSION"
             sudo make install
 
-            # Cleanup
             echo "[+] Cleaning up build files"
             cd ~
             sudo rm -rf "$BUILD_DIR"
 
-            # Verify installation
             echo "[+] Verifying Node.js and npm versions"
             ;;
         n)
-            # Install Node.js from the official repository
             echo "[+] Installing Node.js from the official repository"
             curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
             apt install -y nodejs
@@ -87,23 +77,20 @@ run)
         esac
         node -v
         npm -v
-
         echo "[+] Node.js $REQUIRED_NODE_VERSION has been successfully installed"
-
     else
         echo "[+] Node.js is already installed: $INSTALLED_NODE_VERSION"
     fi
 
-    # Verify Node.js and npm versions
     node -v
     npm -v
 
     # STEP 2: Fix npm global package permissions
     echo "[+] Fixing npm permissions..."
-    mkdir -p ~/.npm-global
-    npm config set prefix '~/.npm-global'
-    echo 'export PATH=$HOME/.npm-global/bin:$PATH' >>~/.bashrc
-    source ~/.bashrc
+    mkdir -p "$USER_HOME/.npm-global"
+    sudo -u "$CURRENT_USER" npm config set prefix "$USER_HOME/.npm-global"
+    echo 'export PATH=$HOME/.npm-global/bin:$PATH' >> "$USER_HOME/.bashrc"
+    source "$USER_HOME/.bashrc"
 
     # STEP 3: Check and Install Required Packages
     echo "[+] Checking and installing required packages..."
@@ -123,34 +110,31 @@ run)
     ufw default allow outgoing
     ufw allow 22/tcp  # SSH
     ufw allow 3030/tcp  # mStream
-    ufw enable -y
+    ufw --force enable
 
-    # STEP 5: Clone the mStream repository if not already present
-    BASE_DIR="/home/rpi/mStream"
+    # STEP 5: Clone the mStream repository
+    BASE_DIR="$USER_HOME/mStream"
     if [ -d "$BASE_DIR" ]; then
         echo "[+] mStream directory already exists. Skipping cloning."
     else
         echo "[+] Cloning the mStream repository..."
-        git clone https://github.com/IrosTheBeggar/mStream.git "$BASE_DIR"
+        sudo -u "$CURRENT_USER" git clone https://github.com/IrosTheBeggar/mStream.git "$BASE_DIR"
     fi
-
-    # Go to the base directory
-    cd "$BASE_DIR"
 
     # STEP 6: Fix file permissions
     echo "[+] Fixing mStream file permissions..."
-    chown -R nout:nout "$BASE_DIR"
+    chown -R "$CURRENT_USER:$CURRENT_USER" "$BASE_DIR"
     chmod -R 775 "$BASE_DIR"
 
     # STEP 7: Create a music directory
-    MUSIC_DIR="/home/rpi/music"
+    MUSIC_DIR="$USER_HOME/music"
     mkdir -p "$MUSIC_DIR"
     echo "[+] Music directory created at $MUSIC_DIR"
 
     # Download a sample music file
     if [ ! -f "$MUSIC_DIR/audio.mp3" ]; then
         echo "[+] Downloading sample music file..."
-        curl -L -o "$MUSIC_DIR/audio.mp3" 'https://docs.google.com/uc?export=download&id=1kjHk-m0vD6T0s33CaQFBvULRWhkCQ0nD'
+        sudo -u "$CURRENT_USER" curl -L -o "$MUSIC_DIR/audio.mp3" 'https://docs.google.com/uc?export=download&id=1kjHk-m0vD6T0s33CaQFBvULRWhkCQ0nD'
     else
         echo "[+] Sample music file already exists. Skipping download."
     fi
@@ -164,7 +148,7 @@ run)
 {
   "port": 3030,
   "bind_ip": "0.0.0.0",
-  "secret": "b6j7j5e6u5g36ubn536uyn536unm5m67u5365vby435y54ymn",
+  "secret": "your-secure-key",
   "folders": {
     "music": { 
         "root": "$MUSIC_DIR"
@@ -176,7 +160,7 @@ EOL
 
     # STEP 9: Install mStream dependencies
     echo "[+] Installing mStream dependencies..."
-    npm install
+    sudo -u "$CURRENT_USER" npm install
 
     # STEP 10: Create a systemd service for mStream
     echo "[+] Creating systemd service for mStream..."
@@ -187,10 +171,10 @@ Description=mStream Music Server
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/node /home/rpi/mStream/cli-boot-wrapper.js -j /home/rpi/mStream/save/conf/config.json
+ExecStart=/usr/bin/node $BASE_DIR/cli-boot-wrapper.js -j $CONFIG_DIR/config.json
 Restart=always
-User=nout
-Group=nout
+User=$CURRENT_USER
+Group=$CURRENT_USER
 
 [Install]
 WantedBy=multi-user.target
