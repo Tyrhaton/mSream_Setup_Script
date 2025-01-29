@@ -131,6 +131,10 @@ run)
     mkdir -p "$MUSIC_DIR"
     echo "[+] Music directory created at $MUSIC_DIR"
 
+    chown -R "$CURRENT_USER:$CURRENT_USER" "$MUSIC_DIR"
+    chmod -R 775 "$MUSIC_DIR"
+
+
     # Download a sample music file
     if [ ! -f "$MUSIC_DIR/audio.mp3" ]; then
         echo "[+] Downloading sample music file..."
@@ -159,8 +163,10 @@ run)
 EOL
 
     # STEP 9: Install mStream dependencies
-    echo "[+] Installing mStream dependencies..."
-    sudo -u "$CURRENT_USER" npm install
+echo "[+] Installing mStream dependencies..."
+cd "$BASE_DIR"  # Move into the mStream directory
+sudo -u "$CURRENT_USER" npm install
+
 
     # STEP 10: Create a systemd service for mStream
     echo "[+] Creating systemd service for mStream..."
