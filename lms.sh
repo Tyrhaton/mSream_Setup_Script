@@ -69,6 +69,7 @@ sudo chown -R lms:lms /var/lms
 # STEP 5: Add music to test LMS
 
 sudo mkdir -p /usr/music
+cd /usr/music
 sudo curl -L -o "audio.mp3" 'https://docs.google.com/uc?export=download&id=1kjHk-m0vD6T0s33CaQFBvULRWhkCQ0nD'
 
 # STEP 6: Start LMS
