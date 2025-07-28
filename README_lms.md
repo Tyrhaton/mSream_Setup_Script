@@ -69,3 +69,16 @@ Shows the IP address on the `wlan0` interface so you can open LMS in a browser.
 - This script assumes you are running on a Debian-based system with `apt` package manager.
 - Adjust network interface (`wlan0`) if your device uses a different interface.
 
+## Manual setup
+
+To use this system you also need to do the following steps
+
+1. Visit `http://<your-ip-address>:5082`
+2. Create an Admin account (on first time visiting the page)
+3. refresh
+4. login
+5. Go to "Libraries" (second arrow from top right)
+6. Add `/usr/music/` as a library
+7. Go to "Scanner" (second arrow from top right)
+8. Click "Scan Now"
+9. After this you should be able to view the music files that are added in `/usr/music/`
