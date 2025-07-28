@@ -1,35 +1,35 @@
 #!/bin/bash
 set -e
 
-# Detect correct user (also when script is run via sudo)
+# Detecteer juiste gebruiker (ook als script via sudo wordt uitgevoerd)
 ICECAST_USER=${SUDO_USER:-$(whoami)}
 ICECAST_GROUP=$(id -gn "$ICECAST_USER")
 
-echo "==> Installing build tools and libraries for Icecast..."
+echo "==> Installeren van build tools en libraries voor icecast..."
 sudo apt update
 sudo apt install -y build-essential git pkg-config \
   libxml2-dev libxslt1-dev libvorbis-dev libogg-dev \
   libtheora-dev libcurl4-openssl-dev libssl-dev \
   libtool automake autoconf yasm libshout3-dev libmp3lame-dev libspeex-dev
 
-echo "==> Downloading Icecast source code..."
+echo "==> Icecast broncode downloaden..."
 mkdir -p ~/src/icecast
 cd ~/src/icecast
 git clone https://gitlab.xiph.org/xiph/icecast-server.git
 cd icecast-server
 git checkout v2.4.4
 
-echo "==> Building Icecast..."
+echo "==> Bouwen van Icecast..."
 ./autogen.sh
 ./configure --prefix=/opt/icecast
 make -j"$(nproc)"
 sudo make install
 
-echo "==> Creating log directory..."
+echo "==> Maken van logdirectory..."
 sudo mkdir -p /opt/icecast/var/log/icecast
 sudo chown -R "$ICECAST_USER:$ICECAST_GROUP" /opt/icecast/var
 
-echo "==> Writing systemd unit..."
+echo "==> Systemd unit schrijven..."
 UNIT_FILE="/etc/systemd/system/icecast.service"
 sudo tee "$UNIT_FILE" > /dev/null <<EOF
 [Unit]
@@ -50,14 +50,14 @@ PrivateTmp=true
 WantedBy=multi-user.target
 EOF
 
-echo "==> Reloading systemd and enabling service..."
+echo "==> Systemd herladen en inschakelen..."
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
 sudo systemctl enable icecast
 sudo systemctl start icecast
 
 
-echo "Configuring Icecast..."
+echo "Icecast instellen..."
 
 ICECAST_CONF_DIR="/opt/icecast/etc"
 ICECAST_CONF_FILE="$ICECAST_CONF_DIR/icecast.xml"
@@ -66,7 +66,7 @@ SOURCE_PASS="stream123"
 ADMIN_PASS="beheer456"
 PIDFILE="/opt/icecast/var/icecast.pid"
 
-echo "==> Writing minimal icecast.xml to: $ICECAST_CONF_FILE"
+echo "==> Schrijft minimale icecast.xml naar: $ICECAST_CONF_FILE"
 
 cat <<EOF | sudo tee "$ICECAST_CONF_FILE" > /dev/null
 <icecast>
@@ -125,11 +125,13 @@ cat <<EOF | sudo tee "$ICECAST_CONF_FILE" > /dev/null
 </icecast>
 EOF
 
-echo "Icecast.xml generated with IP: $ICECAST_IP:8000"
+echo "Icecast.xml gegenereerd met IP: $ICECAST_IP:8000"
 
-echo "Icecast is installed and started."
+echo "Icecast is geïnstalleerd en gestart."
 
-echo "==> Starting Ezstream installation script..."
+echo "==> Ezstream installatie script starten..."
 chmod +x ~/ezstream_install.sh
 bash ~/ezstream_install.sh
+
+
 
